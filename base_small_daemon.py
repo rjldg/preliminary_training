@@ -31,26 +31,10 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     cfg.set_profanity(speechsdk.ProfanityOption.Masked)
     cfg.enable_dictation()  # allows continuous-like punctuation
 
+    # semantic segmentation
+    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, "Semantic")
+
     return cfg
-
-def transcribe_file(wav_path: Path) -> Optional[str]:
-    cfg = build_speech_config()
-    audio_input = speechsdk.AudioConfig(filename=str(wav_path))
-    recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
-
-    print(f"[STT] Transcribing: {wav_path.name} (locale={LOCALE})")
-    
-    # recognize once per file (simple); longer files need chunking or batch/fast STT.
-    result = recognizer.recognize_once()
-
-    if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-        print(f"[STT] Text: {result.text}")
-        return result.text
-    elif result.reason == speechsdk.ResultReason.NoMatch:
-        print("[STT] No speech could be recognized.")
-    else:
-        print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
-    return None
 
 def transcribe_microphone():
     cfg = build_speech_config()
@@ -69,23 +53,6 @@ def transcribe_microphone():
             time.sleep(0.5)
     except KeyboardInterrupt:
         print("\n[STT] Stopped.")
-
-def watch_folder():
-    input_dir = Path(INPUT_DIR)
-    input_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
-
-    seen = set()
-    try:
-        while True:
-            # naive polling for scale, use watchdog/inotify, etc.
-            for p in input_dir.iterdir():
-                if p.is_file() and p.suffix.lower() in {".wav", ".mp3", ".mp4", ".m4a", ".flac"} and p not in seen:
-                    seen.add(p)
-                    transcribe_file(p)
-            time.sleep(2)
-    except KeyboardInterrupt:
-        print("\n[Daemon] Stopped.")
 
 if __name__ == "__main__":
     if USE_MIC:
