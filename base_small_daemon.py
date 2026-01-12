@@ -62,6 +62,23 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
         print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
     return None
 
+def watch_folder():
+    input_dir = Path(INPUT_DIR)
+    input_dir.mkdir(parents=True, exist_ok=True)
+    print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
+    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
+
+    seen = set()
+    try:
+        while True:
+            # naive polling for scale, use watchdog/inotify, etc.
+            for p in input_dir.iterdir():
+                if p.is_file() and p.suffix.lower() in {".wav", ".mp3", ".mp4", ".m4a", ".flac"} and p not in seen:
+                    seen.add(p)
+                    transcribe_file(p)
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("\n[Daemon] Stopped.")
 
 def transcribe_microphone():
     """Continuous recognition to observe segmentation in action."""
@@ -110,25 +127,6 @@ def transcribe_microphone():
         print("\n[STT] Stopping…")
     finally:
         recognizer.stop_continuous_recognition()
-
-
-def watch_folder():
-    input_dir = Path(INPUT_DIR)
-    input_dir.mkdir(parents=True, exist_ok=True)
-    print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
-    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
-
-    seen = set()
-    try:
-        while True:
-            # naive polling for scale, use watchdog/inotify, etc.
-            for p in input_dir.iterdir():
-                if p.is_file() and p.suffix.lower() in {".wav", ".mp3", ".mp4", ".m4a", ".flac"} and p not in seen:
-                    seen.add(p)
-                    transcribe_file(p)
-            time.sleep(2)
-    except KeyboardInterrupt:
-        print("\n[Daemon] Stopped.")
 
 if __name__ == "__main__":
     if USE_MIC:
