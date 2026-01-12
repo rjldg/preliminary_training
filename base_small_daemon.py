@@ -13,7 +13,6 @@ SPEECH_REGION= os.getenv("SPEECH_REGION", "")
 CUSTOM_ENDPOINT_ID  = os.getenv("CUSTOM_ENDPOINT_ID", "")      # to follow: custom daemon endpoint id
 LOCALE       = os.getenv("LOCALE", "en-US")
 INPUT_DIR    = os.getenv("INPUT_DIR", "./incoming_audio")
-USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
 
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not SPEECH_KEY or not SPEECH_REGION:
@@ -55,7 +54,4 @@ def transcribe_microphone():
         print("\n[STT] Stopped.")
 
 if __name__ == "__main__":
-    if USE_MIC:
-        transcribe_microphone()
-    else:
-        watch_folder()
+    transcribe_microphone()
