@@ -15,6 +15,11 @@ LOCALE       = os.getenv("LOCALE", "en-US")
 INPUT_DIR    = os.getenv("INPUT_DIR", "./incoming_audio")
 USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
 
+# Segmentation component vars
+SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic | Coarse | Unknown
+SEG_SILENCE_TIMEOUT = int(os.getenv("SEGMENTATION_SILENCE_TIMEOUT_MS", "800"))
+
+
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not SPEECH_KEY or not SPEECH_REGION:
         raise RuntimeError("Set SPEECH_KEY and SPEECH_REGION in .env")
@@ -32,7 +37,9 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     cfg.enable_dictation()  # allows continuous-like punctuation
 
     # semantic segmentation
-    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, "Semantic")
+    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, str(SEG_STRAT))
+    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationSilenceTimeoutMs, str(SEG_SILENCE_TIMEOUT))
+
 
     return cfg
 
