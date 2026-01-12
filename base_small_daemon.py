@@ -115,6 +115,7 @@ def watch_folder():
     input_dir = Path(INPUT_DIR)
     input_dir.mkdir(parents=True, exist_ok=True)
     print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
+    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout={SEG_SILENCE_TIMEOUT}ms")
 
     seen = set()
     try:
