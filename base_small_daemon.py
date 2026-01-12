@@ -17,8 +17,8 @@ USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
 
 # Segmentation component vars
 SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic | Coarse | Unknown
-SEG_INIT_SILENCE_TIMEOUT = int(os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "800"))
-
+SEG_INIT_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "800")
+SEG_END_SILENCE_TIMEOUT = os.getenv("SEGMENTATION_END_SILENCE_TIMEOUT_MS", "800")
 
 def build_speech_config() -> speechsdk.SpeechConfig:
     if not SPEECH_KEY or not SPEECH_REGION:
@@ -37,9 +37,9 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     cfg.enable_dictation()  # allows continuous-like punctuation
 
     # semantic segmentation
-    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, str(SEG_STRAT))
-    cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(SEG_INIT_SILENCE_TIMEOUT))
-    #cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, str(SEG_END_SILENCE_TIMEOUT))
+    cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, SEG_STRAT)
+    cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, SEG_INIT_SILENCE_TIMEOUT)
+    cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, SEG_END_SILENCE_TIMEOUT)
 
     return cfg
 
@@ -70,17 +70,17 @@ def transcribe_microphone():
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
 
     print(f"[STT] Mic on (locale={LOCALE}) | Strategy={SEG_STRAT} | "
-          f"SilenceTimeout={SEG_INIT_SILENCE_TIMEOUT}ms")
+          f"SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
     print("[STT] Speak; segments will appear as they are finalized. Press Ctrl+C to stop.\n")
 
-    # Hook into events to see both interim and final segment text
+    # hook into events to see both interim and final segment text
     def recognizing_cb(evt: speechsdk.SpeechRecognitionEventArgs):
-        # Partial (interim) text while a segment is still forming
+        # partial (interim) text while a segment is still forming
         if evt.result.reason == speechsdk.ResultReason.RecognizingSpeech:
             print(f"  [Interim] {evt.result.text}")
 
     def recognized_cb(evt: speechsdk.SpeechRecognitionEventArgs):
-        # Final text for the segment that just closed
+        # final text for the segment that just closed
         if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
             print(f"[Segment] {evt.result.text}")
         elif evt.result.reason == speechsdk.ResultReason.NoMatch:
@@ -101,7 +101,7 @@ def transcribe_microphone():
     recognizer.session_stopped.connect(session_stopped_cb)
     recognizer.canceled.connect(canceled_cb)
 
-    # Start continuous recognition
+    # start continuous recognition
     recognizer.start_continuous_recognition()
     try:
         while True:
@@ -116,7 +116,7 @@ def watch_folder():
     input_dir = Path(INPUT_DIR)
     input_dir.mkdir(parents=True, exist_ok=True)
     print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
-    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout={SEG_INIT_SILENCE_TIMEOUT}ms")
+    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout=[Init: {SEG_INIT_SILENCE_TIMEOUT}ms, End: {SEG_END_SILENCE_TIMEOUT}ms")
 
     seen = set()
     try:
