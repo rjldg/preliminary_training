@@ -39,6 +39,7 @@ def build_speech_config() -> speechsdk.SpeechConfig:
     # semantic segmentation
     cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, str(SEG_STRAT))
     cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(SEG_INIT_SILENCE_TIMEOUT))
+    #cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, str(SEG_END_SILENCE_TIMEOUT))
 
     return cfg
 
