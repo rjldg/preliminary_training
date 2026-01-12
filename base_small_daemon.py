@@ -61,23 +61,55 @@ def transcribe_file(wav_path: Path) -> Optional[str]:
         print(f"[STT] Error: {result.reason} {result.cancellation_details.error_details}")
     return None
 
+
 def transcribe_microphone():
+    """Continuous recognition to observe segmentation in action."""
     cfg = build_speech_config()
     audio_input = speechsdk.AudioConfig(use_default_microphone=True)
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
 
-    print(f"[STT] Listening on microphone (locale={LOCALE}). Press Ctrl+C to stop.")
+    print(f"[STT] Mic on (locale={LOCALE}) | Strategy={SEG_STRAT} | "
+          f"SilenceTimeout={SEG_SILENCE_TIMEOUT}ms")
+    print("[STT] Speak; segments will appear as they are finalized. Press Ctrl+C to stop.\n")
+
+    # Hook into events to see both interim and final segment text
+    def recognizing_cb(evt: speechsdk.SpeechRecognitionEventArgs):
+        # Partial (interim) text while a segment is still forming
+        if evt.result.reason == speechsdk.ResultReason.RecognizingSpeech:
+            print(f"  [Interim] {evt.result.text}")
+
+    def recognized_cb(evt: speechsdk.SpeechRecognitionEventArgs):
+        # Final text for the segment that just closed
+        if evt.result.reason == speechsdk.ResultReason.RecognizedSpeech:
+            print(f"[Segment] {evt.result.text}")
+        elif evt.result.reason == speechsdk.ResultReason.NoMatch:
+            print("[Segment] (no match)")
+
+    def session_started_cb(evt: speechsdk.SessionEventArgs):
+        print("[Session] Started")
+
+    def session_stopped_cb(evt: speechsdk.SessionEventArgs):
+        print("[Session] Stopped")
+
+    def canceled_cb(evt: speechsdk.SpeechRecognitionCanceledEventArgs):
+        print(f"[Canceled] {evt.reason} {evt.error_details}")
+
+    recognizer.recognizing.connect(recognizing_cb)
+    recognizer.recognized.connect(recognized_cb)
+    recognizer.session_started.connect(session_started_cb)
+    recognizer.session_stopped.connect(session_stopped_cb)
+    recognizer.canceled.connect(canceled_cb)
+
+    # Start continuous recognition
+    recognizer.start_continuous_recognition()
     try:
         while True:
-            print("[STT] Say something…")
-            result = recognizer.recognize_once()  # simple utterance loop
-            if result.reason == speechsdk.ResultReason.RecognizedSpeech:
-                print(f"[STT] You said: {result.text}")
-            else:
-                print(f"[STT] Result: {result.reason}")
-            time.sleep(0.5)
+            time.sleep(0.2)
     except KeyboardInterrupt:
-        print("\n[STT] Stopped.")
+        print("\n[STT] Stopping…")
+    finally:
+        recognizer.stop_continuous_recognition()
+
 
 def watch_folder():
     input_dir = Path(INPUT_DIR)
