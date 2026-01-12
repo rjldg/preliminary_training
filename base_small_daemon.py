@@ -17,7 +17,7 @@ USE_MIC      = os.getenv("USE_MIC", "false").lower() == "true"
 
 # Segmentation component vars
 SEG_STRAT = os.getenv("SEGMENTATION_STRATEGY", "Semantic")  # Semantic | Coarse | Unknown
-SEG_SILENCE_TIMEOUT = int(os.getenv("SEGMENTATION_SILENCE_TIMEOUT_MS", "800"))
+SEG_INIT_SILENCE_TIMEOUT = int(os.getenv("SEGMENTATION_INIT_SILENCE_TIMEOUT_MS", "800"))
 
 
 def build_speech_config() -> speechsdk.SpeechConfig:
@@ -38,7 +38,7 @@ def build_speech_config() -> speechsdk.SpeechConfig:
 
     # semantic segmentation
     cfg.set_property(speechsdk.PropertyId.Speech_SegmentationStrategy, str(SEG_STRAT))
-    cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(SEG_SILENCE_TIMEOUT))
+    cfg.set_property(speechsdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, str(SEG_INIT_SILENCE_TIMEOUT))
 
     return cfg
 
@@ -69,7 +69,7 @@ def transcribe_microphone():
     recognizer = speechsdk.SpeechRecognizer(speech_config=cfg, audio_config=audio_input)
 
     print(f"[STT] Mic on (locale={LOCALE}) | Strategy={SEG_STRAT} | "
-          f"SilenceTimeout={SEG_SILENCE_TIMEOUT}ms")
+          f"SilenceTimeout={SEG_INIT_SILENCE_TIMEOUT}ms")
     print("[STT] Speak; segments will appear as they are finalized. Press Ctrl+C to stop.\n")
 
     # Hook into events to see both interim and final segment text
@@ -115,7 +115,7 @@ def watch_folder():
     input_dir = Path(INPUT_DIR)
     input_dir.mkdir(parents=True, exist_ok=True)
     print(f"[Daemon] Watching folder: {input_dir.resolve()} (drop .wav/.mp3/.mp4 etc.)")
-    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout={SEG_SILENCE_TIMEOUT}ms")
+    print(f"[Segmentation] Strategy={SEG_STRAT}, SilenceTimeout={SEG_INIT_SILENCE_TIMEOUT}ms")
 
     seen = set()
     try:
